@@ -8,6 +8,11 @@ import {
 import { BiPlus, BiUser, BiSend, BiSolidUserCircle } from 'react-icons/bi'
 import { MdOutlineArrowLeft, MdOutlineArrowRight } from 'react-icons/md'
 
+const serverUrl =
+  process.env.NODE_ENV === 'development'
+    ? 'http://localhost:5000'
+    : 'internal-awseb--AWSEB-uzVxQQJ6yrAi-1052538254.us-west-1.elb.amazonaws.com' // TODO
+
 const fetchOptions = {
   headers: {
     'Content-Type': 'application/json',
@@ -89,7 +94,7 @@ function App() {
     setErrorText('')
 
     try {
-      const response = await fetch(`http://localhost:5000/api/completions`, {
+      const response = await fetch(`${serverUrl}/api/completions`, {
         ...fetchOptions,
         method: 'POST',
         body: JSON.stringify({
@@ -149,10 +154,7 @@ function App() {
     async function getAllMessages() {
       try {
         console.log(`*Fetching previous messages...`)
-        const response = await fetch(
-          'http://localhost:5000/api/messages',
-          fetchOptions
-        )
+        const response = await fetch(`${serverUrl}/api/messages`, fetchOptions)
         const data = await response.json()
         setAllMessages(data)
       } catch (error) {
