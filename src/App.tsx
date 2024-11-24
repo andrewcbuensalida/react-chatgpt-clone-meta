@@ -8,34 +8,58 @@ import {
 import { BiPlus, BiUser, BiSend, BiSolidUserCircle } from "react-icons/bi";
 import { MdOutlineArrowLeft, MdOutlineArrowRight } from "react-icons/md";
 
+const fetchOptions = {
+	headers: {
+		"Content-Type": "application/json",
+		Authorization: "Bearer andrewcbuensalida",
+	},
+};
+
 function App() {
 	const [text, setText] = useState<any>("");
-	const [message, setMessage] = useState<any>(null);
-	const [previousChats, setPreviousChats] = useState<any>([]);
-	const [localChats, setLocalChats] = useState<any>([]);
+	const [allMessages, setAllMessages] = useState<any>([]);
 	const [currentTitle, setCurrentTitle] = useState<any>(null);
 	const [isResponseLoading, setIsResponseLoading] = useState<any>(false);
 	const [errorText, setErrorText] = useState<any>("");
 	const [isShowSidebar, setIsShowSidebar] = useState<any>(false);
 	const scrollToLastItem = useRef<any>(null);
 
+	const currentMessages = allMessages.filter(
+		(msg: any) => msg.title === currentTitle
+	);
+	const messagesToday = allMessages.filter(
+		(msg: any) =>
+			new Date(msg.createdAt).toDateString() === new Date().toDateString()
+	);
+	const messagesTodayUniqueTitles = Array.from(
+		new Set(messagesToday.map((msg: any) => msg.title))
+	).reverse();
+
+	const messagesNotTodayUniqueTitles = Array.from(
+		new Set(
+			allMessages
+				.map((msg: any) => msg.title)
+				.filter(
+					(title: any) => !messagesTodayUniqueTitles.includes(title)
+				)
+		)
+	).reverse();
+
 	const createNewChat = () => {
-		setMessage(null);
 		setText("");
 		setCurrentTitle(null);
 	};
 
-	const backToHistoryPrompt = (uniqueTitle:any) => {
+	const handleTitleClick = (uniqueTitle: any) => {
 		setCurrentTitle(uniqueTitle);
-		setMessage(null);
 		setText("");
 	};
 
 	const toggleSidebar = useCallback(() => {
-		setIsShowSidebar((prev:any) => !prev);
+		setIsShowSidebar((prev: any) => !prev);
 	}, []);
 
-	const submitHandler = async (e:any) => {
+	const submitHandler = async (e: any) => {
 		e.preventDefault();
 
 		if (!text) return;
@@ -43,21 +67,17 @@ function App() {
 		setIsResponseLoading(true);
 		setErrorText("");
 
-		const options = {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: 'Bearer andrewcbuensalida',
-			},
-			body: JSON.stringify({
-				message: text,
-			}),
-		};
-
 		try {
 			const response = await fetch(
 				`http://localhost:5000/api/completions`,
-				options
+				{
+					...fetchOptions,
+					method: "POST",
+					body: JSON.stringify({
+						message: text,
+						title: currentTitle,
+					}),
+				}
 			);
 
 			if (response.status === 429) {
@@ -72,12 +92,11 @@ function App() {
 				setErrorText(data.error.message);
 				setText("");
 			} else {
-				setErrorText('');
+				setErrorText("");
 			}
 
 			if (!data.error) {
 				setErrorText("");
-				setMessage(data.choices[0].message);
 				setTimeout(() => {
 					scrollToLastItem.current?.lastElementChild?.scrollIntoView({
 						behavior: "smooth",
@@ -86,8 +105,10 @@ function App() {
 				setTimeout(() => {
 					setText("");
 				}, 2);
+				setAllMessages([...allMessages, data]);
+				setCurrentTitle(data.title);
 			}
-		} catch (e:any) {
+		} catch (e: any) {
 			setErrorText(e.message);
 			console.error(e);
 		} finally {
@@ -109,58 +130,22 @@ function App() {
 	}, []);
 
 	useEffect(() => {
-		const storedChats = localStorage.getItem("previousChats");
-
-		if (storedChats) {
-			setLocalChats(JSON.parse(storedChats));
+		async function getAllMessages() {
+			try {
+				console.log(`*Fetching previous messages...`);
+				const response = await fetch(
+					"http://localhost:5000/api/messages",
+					fetchOptions
+				);
+				const data = await response.json();
+				setAllMessages(data);
+			} catch (error) {
+				console.error("Error fetching previous messages:", error);
+			}
 		}
+
+		getAllMessages();
 	}, []);
-
-	useEffect(() => {
-		if (!currentTitle && text && message) {
-			setCurrentTitle(text);
-		}
-
-		if (currentTitle && text && message) {
-			const newChat = {
-				title: currentTitle,
-				role: "user",
-				content: text,
-			};
-
-			const responseMessage = {
-				title: currentTitle,
-				role: message.role,
-				content: message.content,
-			};
-
-			setPreviousChats((prevChats:any) => [
-				...prevChats,
-				newChat,
-				responseMessage,
-			]);
-			setLocalChats((prevChats: any) => [
-				...prevChats,
-				newChat,
-				responseMessage,
-			]);
-
-			const updatedChats = [...localChats, newChat, responseMessage];
-			localStorage.setItem("previousChats", JSON.stringify(updatedChats));
-		}
-	}, [message, currentTitle]);
-
-	const currentChat = (localChats || previousChats).filter(
-		(prevChat: any) => prevChat.title === currentTitle
-	);
-
-	const uniqueTitles = Array.from(
-		new Set(previousChats.map((prevChat: any) => prevChat.title).reverse())
-	);
-
-	const localUniqueTitles = Array.from(
-		new Set(localChats.map((prevChat: any) => prevChat.title).reverse())
-	).filter((title) => !uniqueTitles.includes(title));
 
 	return (
 		<>
@@ -175,86 +160,57 @@ function App() {
 						<button>New Chat</button>
 					</div>
 					<div className="sidebar-history">
-						{uniqueTitles.length > 0 &&
-							previousChats.length !== 0 && (
-								<>
-									<p>Ongoing</p>
-									<ul>
-										{uniqueTitles?.map(
-											(uniqueTitle: any, idx: number) => {
-												const listItems =
-													document.querySelectorAll(
-														"li"
-													);
-
-												listItems.forEach((item) => {
-													if (
-														item.scrollWidth >
-														item.clientWidth
-													) {
-														item.classList.add(
-															"li-overflow-shadow"
-														);
+						{messagesTodayUniqueTitles.length > 0 && (
+							<>
+								<p>Today</p>
+								<ul>
+									{messagesTodayUniqueTitles?.map(
+										(uniqueTitle: any, idx) => {
+											return (
+												<li
+													key={uniqueTitle}
+													onClick={() =>
+														handleTitleClick(
+															uniqueTitle
+														)
 													}
-												});
-
-												return (
-													<li
-														key={idx}
-														onClick={() =>
-															backToHistoryPrompt(
-																uniqueTitle
-															)
-														}
-													>
-														{uniqueTitle}
-													</li>
-												);
-											}
-										)}
-									</ul>
-								</>
-							)}
-						{localUniqueTitles.length > 0 &&
-							localChats.length !== 0 && (
-								<>
-									<p>Previous</p>
-									<ul>
-										{localUniqueTitles?.map(
-											(uniqueTitle: any, idx) => {
-												const listItems =
-													document.querySelectorAll(
-														"li"
-													);
-
-												listItems.forEach((item) => {
-													if (
-														item.scrollWidth >
-														item.clientWidth
-													) {
-														item.classList.add(
-															"li-overflow-shadow"
-														);
+													className={`App_Unique_Title ${
+														uniqueTitle ===
+															currentTitle &&
+														"active"
+													}`}
+												>
+													{uniqueTitle}
+												</li>
+											);
+										}
+									)}
+								</ul>
+							</>
+						)}
+						{messagesNotTodayUniqueTitles.length > 0 && (
+							<>
+								<p>Previous</p>
+								<ul>
+									{messagesNotTodayUniqueTitles?.map(
+										(uniqueTitle: any, idx) => {
+											return (
+												<li
+													key={idx}
+													onClick={() =>
+														handleTitleClick(
+															uniqueTitle
+														)
 													}
-												});
-
-												return (
-													<li
-														key={idx}
-														onClick={() =>
-															backToHistoryPrompt(
-																uniqueTitle
-															)
-														}
-													>
-														{uniqueTitle}
-													</li>
-												);
-											}
-										)}
-									</ul>
-								</>
-							)}
+												>
+													{uniqueTitle}
+												</li>
+											);
+										}
+									)}
+								</ul>
+							</>
+						)}
 					</div>
 					<div className="sidebar-info">
 						<div className="sidebar-info-upgrade">
@@ -297,11 +253,10 @@ function App() {
 					)}
 					<div className="main-header">
 						<ul>
-							{currentChat?.map((chatMsg: any, idx: any) => {
+							{currentMessages?.map((chatMsg: any) => {
 								const isUser = chatMsg.role === "user";
-
 								return (
-									<li key={idx} ref={scrollToLastItem}>
+									<li key={chatMsg.id} ref={scrollToLastItem}>
 										{isUser ? (
 											<div>
 												<BiSolidUserCircle
@@ -310,7 +265,8 @@ function App() {
 											</div>
 										) : (
 											<img
-												src="images/chatgpt-logo.svg"
+												className="avatar"
+												src="pokeball.png"
 												alt="ChatGPT"
 											/>
 										)}
@@ -324,9 +280,38 @@ function App() {
 										) : (
 											<div>
 												<p className="role-title">
-													ChatGPT
+													Pokemon Assistant
 												</p>
-												<p>{chatMsg.content}</p>
+												<p>
+													{chatMsg.toolName ===
+														"getPokemonImage" &&
+													!chatMsg.errorMessage ? (
+														<img
+															src={
+																JSON.parse(
+																	chatMsg.content
+																).pokemonImage
+															}
+															alt="Pokemon"
+															width={300}
+															height={300}
+														/>
+													) : (
+														chatMsg.content
+															?.split("\n")
+															.map(
+																(
+																	line: any,
+																	index: any
+																) => (
+																	<>
+																		{line}
+																		<br />
+																	</>
+																)
+															)
+													)}
+												</p>
 											</div>
 										)}
 									</li>

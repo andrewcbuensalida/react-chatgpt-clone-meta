@@ -191,7 +191,7 @@ button {
   background-color: #444655;
 }
 
-.main-header img:not(:nth-child(even)) {
+.main-header .avatar {
   display: block;
   border-radius: 0.3rem;
   width: 1.8rem;
@@ -277,6 +277,10 @@ button {
 
 .form-container svg:hover {
   fill: #ececf1;
+}
+
+.App_Unique_Title.active {
+  background-color: #404150;
 }
 
 @media screen and (min-width: 1280px) {
