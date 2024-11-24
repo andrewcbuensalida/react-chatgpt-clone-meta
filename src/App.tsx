@@ -165,7 +165,7 @@ function App() {
 								<p>Today</p>
 								<ul>
 									{messagesTodayUniqueTitles?.map(
-										(uniqueTitle: any, idx) => {
+										(uniqueTitle: any) => {
 											return (
 												<li
 													key={uniqueTitle}
@@ -176,8 +176,9 @@ function App() {
 													}
 													className={`App_Unique_Title ${
 														uniqueTitle ===
-															currentTitle &&
-														"active"
+														currentTitle
+															? "active"
+															: ""
 													}`}
 												>
 													{uniqueTitle}
@@ -202,6 +203,12 @@ function App() {
 															uniqueTitle
 														)
 													}
+													className={`App_Unique_Title ${
+														uniqueTitle ===
+														currentTitle
+															? "active"
+															: ""
+													}`}
 												>
 													{uniqueTitle}
 												</li>
