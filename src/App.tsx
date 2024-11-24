@@ -11,7 +11,7 @@ import { MdOutlineArrowLeft, MdOutlineArrowRight } from 'react-icons/md'
 const serverUrl =
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:5000'
-    : 'internal-awseb--AWSEB-uzVxQQJ6yrAi-1052538254.us-west-1.elb.amazonaws.com' // TODO
+    : 'http://internal-awseb--AWSEB-uzVxQQJ6yrAi-1052538254.us-west-1.elb.amazonaws.com' // TODO
 
 const fetchOptions = {
   headers: {
