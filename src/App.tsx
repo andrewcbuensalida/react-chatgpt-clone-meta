@@ -23,6 +23,7 @@ function App() {
 	const [errorText, setErrorText] = useState<any>("");
 	const [isShowSidebar, setIsShowSidebar] = useState<any>(false);
 	const scrollToLastItem = useRef<any>(null);
+	const inputRef = useRef<any>(null);
 
 	const currentMessages = allMessages.filter(
 		(msg: any) => msg.title === currentTitle
@@ -48,11 +49,13 @@ function App() {
 	const createNewChat = () => {
 		setText("");
 		setCurrentTitle(null);
+		inputRef.current?.focus();
 	};
 
 	const handleTitleClick = (uniqueTitle: any) => {
 		setCurrentTitle(uniqueTitle);
 		setText("");
+		inputRef.current?.focus();
 	};
 
 	const toggleSidebar = useCallback(() => {
@@ -64,6 +67,26 @@ function App() {
 
 		if (!text) return;
 
+		// temporarily add the message to the list. This will be replaced by the actual response since setAllMessages below uses an outdated allMessages state.
+		setAllMessages([
+			...allMessages,
+			{
+				id: Math.random().toString(36).substr(2, 9),
+				title: currentTitle || text,
+				role: "user",
+				content: text,
+				createdAt: new Date().toISOString(),
+				userId: "1",
+			},
+		]);
+
+    setCurrentTitle(currentTitle || text);
+
+		setTimeout(() => {
+			scrollToLastItem.current?.lastElementChild?.scrollIntoView({
+				behavior: "smooth",
+			});
+		}, 1);
 		setIsResponseLoading(true);
 		setErrorText("");
 
@@ -105,8 +128,8 @@ function App() {
 				setTimeout(() => {
 					setText("");
 				}, 2);
-				setAllMessages([...allMessages, data]);
-				setCurrentTitle(data.title);
+				setAllMessages([...allMessages, ...data.newMessages]);
+				setCurrentTitle(data.newMessages[0].title);
 			}
 		} catch (e: any) {
 			setErrorText(e.message);
@@ -339,6 +362,7 @@ function App() {
 							onSubmit={submitHandler}
 						>
 							<input
+								ref={inputRef}
 								type="text"
 								placeholder="Send a message."
 								spellCheck="false"
