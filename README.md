@@ -1,46 +1,103 @@
-# Getting Started with Create React App
+## About
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This ChatGPT clone allows you to ask a chatbot anything about Pokemon, from current Pokemon events, to abilities. You can even ask it to show you images of the Pokemon.
 
-## Available Scripts
+## Architecture
 
-In the project directory, you can run:
+### Conversation workflow
 
-### `npm start`
+- User goes to React website that's hosted on AWS Amplify. Asks a question about Pokemon.
+- Question goes to NodeJs server that's hosted in AWS Elastic Beanstalk.
+- NodeJs saves messages to a Postgres AWS RDS database.
+- NodeJs also sends question to OpenAI API.
+- OpenAI API does inference and either sends back the answer, or suggests what tools and arguments to use to NodeJs,
+- NodeJs always saves the messages to Postgres.
+- If OpenAI answered directly (finish_reason:stop), it is sent to React.
+- If it's a tool suggestion, NodeJs calls the tool with the given arguments, either the Tavily web search tool, or the PokeAPI tool,
+- Again NodeJs saves to Postgres the results of the tool call,
+- NodeJs either sends the tool call result to OpenAI to get a response to the search results for Tavily, OR a placeholder response is created for PokeAPI,
+- NodeJs again saves the response to Postgres,
+- Response is sent to React.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Instructions to run app locally
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- Have git installed. https://gitforwindows.org/
+- Have NodeJs installed. https://nodejs.org/
+- For backend:
 
-### `npm test`
+  - In a command prompt, run
+    - `git clone https://github.com/andrewcbuensalida/typescript-node-project.git`
+  - `cd typescript-node-project`
+  - Install node_modules
+    - `npm ci`
+  - Get an OPENAI api key, Tavily API key, then fill in .env file with it
+  - `npm run local`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- For the database,
 
-### `npm run build`
+  - Install Docker desktop. https://www.docker.com/products/docker-desktop and make sure it's running
+  - to use my Postgres container that has empty tables initialized:
+    - Pull then run in one step with
+      - `docker run -d --name pokemon-postgres-container -e POSTGRES_USER=your_username -e POSTGRES_PASSWORD=your_password -p 5433:5432 andrewcbuensalida/pokemon-postgres-image:latest`
+  - Alternatively, to use a Postgres container that you have to manually initialize the tables
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+    - Have a generic PostreSQL container running:
+      - `docker run --name pokemon-postgres-container -e POSTGRES_PASSWORD=your_password -e POSTGRES_USER=your_username -p 5433:5432 -d postgres`
+      - --name is container name. -p is port mapping. --rm will delete container when done.
+    - Install ts-node
+      - `npm i ts-node --global`
+    - Create tables in the postgres container. cd to init-db.ts. Make sure CREATE DATABASE is commented out, then run
+      - `ts-node init-db.ts`
+      - You can do this too if you want to quickly reset the database
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+  - To check if tables are successfully created
+    - In postgres container, connect to database with
+      - `psql -U your_username -d pokemon_chatbot_db -p 5432`
+    - List databases
+      - `\l`
+    - to list tables
+      - `\dt`
+    - If you weren't connected to a database
+      - `\c <databaseName>`
+    - Check inside the table
+      - `SELECT * FROM messages;`
+    - disconnect from psql
+      - `\q`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- For the front-end:
+  - In command prompt
+    - `git clone https://github.com/andrewcbuensalida/react-chatgpt-clone-meta`
+    - `cd react-chatgpt-clone-meta`
+    - `npm ci`
+    - `npm run start`
+    - Go to http://localhost:3000/
 
-### `npm run eject`
+## To create a postgres docker image that has empty tables already initialized
+- create schema.sql. Make sure it has CREATE DATABASE uncomented
+- create a Dockerfile in the same folder.
+- Build the image
+  - `docker build -t pokemon-postgres-image .`
+  - This will copy schema.sql into the container folder that postgres runs automatically on run
+- Run the container
+  `docker run -d --name pokemon-postgres-container -e POSTGRES_PASSWORD=your_password -e POSTGRES_USER=your_username -p 5433:5432 pokemon-postgres-image`
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## To push image to dockerhub so others can run it
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- Create a dockerhub account
+- In command prompt
+  - `docker login`
+- Tag the image
+  - `docker tag pokemon-postgres-image andrewcbuensalida/pokemon-postgres-image:latest`
+- `docker push andrewcbuensalida/pokemon-postgres-image:latest`
+- OR you can use the docker desktop interface to push
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## TODO
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+- better instructions
+- front-end should send chat_id
+- auth
+- Deploy be elastic Beanstalk
+- Fe Amplify
+- design diagram
+- add to portfolio
+- dry
