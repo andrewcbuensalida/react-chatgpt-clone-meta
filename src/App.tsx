@@ -236,7 +236,7 @@ function App() {
             <div className="empty-chat-container">
               <img src="pokeball.png" width={45} height={45} alt="ChatGPT" />
               <h1>Pokemon Assistant</h1>
-              <h3>Ask my anything about Pokemon</h3>
+              <h3>Say 'show me Pikachu' or ask me anything about Pokemon</h3>
             </div>
           )}
 
