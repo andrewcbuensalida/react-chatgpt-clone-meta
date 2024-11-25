@@ -11,7 +11,7 @@ import { MdOutlineArrowLeft, MdOutlineArrowRight } from 'react-icons/md'
 const serverUrl =
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:5000'
-    : 'http://pokemon-node-eb-env.eba-wm9uriy7.us-west-1.elasticbeanstalk.com/' // TODO
+    : 'http://pokemon-lb-1235824211.us-west-1.elb.amazonaws.com:5000/' // TODO
 
 const fetchOptions = {
   headers: {
