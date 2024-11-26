@@ -10,9 +10,8 @@ import { MdOutlineArrowLeft, MdOutlineArrowRight } from 'react-icons/md'
 
 const serverUrl =
   process.env.NODE_ENV === 'development'
-    ? 'http://localhost:5000'
-    : // : 'https://pokemon-lb-1235824211.us-west-1.elb.amazonaws.com' // TODO
-      'https://pokemon4-0770c86f5a12.herokuapp.com' // TODO
+    ? 'http://localhost:8080'
+    : 'https://pokemon4-0770c86f5a12.herokuapp.com' // TODO
 console.log(`*Example serverUrl: `, serverUrl)
 
 const fetchOptions = {
