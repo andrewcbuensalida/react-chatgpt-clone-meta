@@ -12,7 +12,6 @@ const serverUrl =
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:8080'
     : 'https://pokemon4-0770c86f5a12.herokuapp.com' // TODO
-console.log(`*Example serverUrl: `, serverUrl)
 
 const fetchOptions = {
   headers: {
@@ -288,7 +287,7 @@ function App() {
                       <div>
                         <p className="role-title">Pokemon Assistant</p>
                         <p>
-                          {chatMsg.toolName === 'getPokemonImage' &&
+                          {chatMsg.toolName === 'getPokemonImageByName' &&
                           !chatMsg.errorMessage ? (
                             <img
                               src={JSON.parse(chatMsg.content).pokemonImage}
